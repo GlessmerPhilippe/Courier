@@ -7,9 +7,11 @@ API REST pour la gestion du courrier familial développée avec Symfony 6.3.
 - **Authentification JWT** : Inscription, connexion, gestion des utilisateurs
 - **Gestion du courrier** : CRUD complet avec filtres et recherche
 - **Upload de pièces jointes** : Support des fichiers PDF, images, documents
+- **Administration** : Interface admin pour gérer les utilisateurs
 - **Statistiques** : Tableau de bord avec métriques
 - **Export** : CSV et données pour PDF
 - **API Documentation** : Swagger/OpenAPI intégré
+- **Fixtures** : Données de test et utilisateurs prédéfinis
 - **Internationalisation** : Support FR/EN
 - **Sécurité** : Validation, CORS, protection des endpoints
 
@@ -34,6 +36,20 @@ cp .env .env.local
 # Éditer .env.local avec vos paramètres
 ```
 
+Variables d'environnement importantes :
+```env
+# Base de données
+DATABASE_URL="sqlite:///%kernel.project_dir%/var/data.db"
+
+# JWT
+JWT_SECRET_KEY=%kernel.project_dir%/config/jwt/private.pem
+JWT_PUBLIC_KEY=%kernel.project_dir%/config/jwt/public.pem
+JWT_PASSPHRASE=your_passphrase
+
+# Upload
+UPLOAD_DIRECTORY=%kernel.project_dir%/public/uploads
+```
+
 3. **Générer les clés JWT**
 ```bash
 mkdir -p config/jwt
@@ -47,18 +63,33 @@ php bin/console doctrine:database:create
 php bin/console doctrine:migrations:migrate
 ```
 
-5. **Créer le dossier d'upload**
+5. **Charger les fixtures (données de test)**
+```bash
+php bin/console doctrine:fixtures:load
+```
+
+6. **Créer le dossier d'upload**
 ```bash
 mkdir -p public/uploads
 chmod 755 public/uploads
 ```
 
-6. **Démarrer le serveur**
+7. **Démarrer le serveur**
 ```bash
 symfony server:start
 # ou
 php -S localhost:8000 -t public/
 ```
+
+## Utilisateurs créés par les fixtures
+
+### Comptes administrateurs
+- **Guillaume Lessmer** : `glessmer@live.fr` / `admin123` (ROLE_ADMIN)
+- **Admin Test** : `admin@family.com` / `admin123` (ROLE_ADMIN)
+
+### Comptes utilisateurs
+- **Utilisateur Test** : `user@family.com` / `user123` (ROLE_USER)
+- **Compte Démo** : `demo@mailmanager.com` / `demo123` (ROLE_USER)
 
 ## Documentation API
 
@@ -80,6 +111,13 @@ Une fois le serveur démarré, accédez à la documentation Swagger :
 - `DELETE /api/mails/{id}` - Supprimer un courrier
 - `GET /api/mails/stats` - Statistiques
 - `GET /api/mails/overdue` - Courriers en retard
+
+### Administration (ROLE_ADMIN requis)
+- `GET /api/admin/users` - Liste des utilisateurs
+- `POST /api/admin/users` - Créer un utilisateur
+- `PUT /api/admin/users/{id}` - Modifier un utilisateur
+- `DELETE /api/admin/users/{id}` - Supprimer un utilisateur
+- `GET /api/admin/stats` - Statistiques globales
 
 ### Pièces jointes
 - `POST /api/mails/{id}/attachments` - Upload de fichier
@@ -136,6 +174,7 @@ Les endpoints de liste supportent les filtres suivants :
 - Protection CSRF désactivée pour l'API
 - CORS configuré pour le développement
 - Isolation des données par utilisateur
+- Interface d'administration protégée par ROLE_ADMIN
 
 ## Structure du projet
 
@@ -149,6 +188,7 @@ symfony-api/
 │   ├── Controller/  # Contrôleurs API
 │   ├── Entity/      # Entités Doctrine
 │   ├── Repository/  # Repositories
+│   ├── DataFixtures/ # Fixtures (données de test)
 │   └── Service/     # Services métier
 └── var/             # Cache et logs
 ```
@@ -164,6 +204,9 @@ php bin/console make:migration
 # Appliquer les migrations
 php bin/console doctrine:migrations:migrate
 
+# Recharger les fixtures
+php bin/console doctrine:fixtures:load
+
 # Vider le cache
 php bin/console cache:clear
 
@@ -172,6 +215,21 @@ php bin/console debug:router
 
 # Valider le schéma de base
 php bin/console doctrine:schema:validate
+
+# Créer un utilisateur admin
+php bin/console make:user
+```
+
+### Gestion des fixtures
+
+Les fixtures créent automatiquement :
+- **4 utilisateurs** avec différents rôles
+- **Courriers d'exemple** pour chaque utilisateur
+- **Données réalistes** pour tester l'application
+
+Pour recharger les fixtures :
+```bash
+php bin/console doctrine:fixtures:load --no-interaction
 ```
 
 ### Tests
@@ -183,34 +241,23 @@ Pour tester l'API, vous pouvez utiliser :
 
 ### Exemple d'utilisation
 
-1. **S'inscrire**
-```bash
-curl -X POST http://localhost:8000/api/register \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"password","name":"Test User"}'
-```
-
-2. **Se connecter**
+1. **Se connecter avec votre compte**
 ```bash
 curl -X POST http://localhost:8000/api/login_check \
   -H "Content-Type: application/json" \
-  -d '{"username":"test@example.com","password":"password"}'
+  -d '{"username":"glessmer@live.fr","password":"admin123"}'
 ```
 
-3. **Créer un courrier**
+2. **Récupérer vos courriers**
 ```bash
-curl -X POST http://localhost:8000/api/mails \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "type":"invoice",
-    "sender":"EDF",
-    "recipient":"John Doe",
-    "receivedDate":"2024-01-15T00:00:00Z",
-    "status":"pending",
-    "subject":"Facture électricité",
-    "dueDate":"2024-02-15T00:00:00Z"
-  }'
+curl -X GET http://localhost:8000/api/mails \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+3. **Accéder à l'interface admin**
+```bash
+curl -X GET http://localhost:8000/api/admin/users \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 ## Production
@@ -223,6 +270,7 @@ Pour déployer en production :
 4. Activer le cache de production
 5. Configurer les logs
 6. Sécuriser les clés JWT
+7. Ne pas charger les fixtures en production
 
 ## Support
 
