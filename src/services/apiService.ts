@@ -1,4 +1,6 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api';
+const PUBLIC_URL = import.meta.env.VITE_API_URL_PUBLIC || 'https://api.gestion-famille.com';
+const UPLOAD_BASE_URL = `${PUBLIC_URL}/uploads`;
 
 class ApiService {
   private token: string | null = null;

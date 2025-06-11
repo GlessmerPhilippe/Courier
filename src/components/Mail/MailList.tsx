@@ -16,6 +16,8 @@ import { mailService } from '../../services';
 import { format } from 'date-fns';
 import { fr, enUS } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
+import MailDetail from './MailDetail';
+import EditMail from './EditMail';
 
 const MailList: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -25,6 +27,9 @@ const MailList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState<MailFilter>({});
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedMail, setSelectedMail] = useState<Mail | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   const locale = i18n.language === 'fr' ? fr : enUS;
 
@@ -70,6 +75,31 @@ const MailList: React.FC = () => {
         console.error('Error deleting mail:', error);
       }
     }
+  };
+
+  const handleViewMail = (mail: Mail) => {
+    setSelectedMail(mail);
+    setShowDetailModal(true);
+  };
+
+  const handleEditMail = (mail: Mail) => {
+    setSelectedMail(mail);
+    setShowEditModal(true);
+  };
+
+  const handleCloseDetailModal = () => {
+    setShowDetailModal(false);
+    setSelectedMail(null);
+  };
+
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+    setSelectedMail(null);
+  };
+
+  const handleUpdateMail = (updatedMail: Mail) => {
+    setMails(prev => prev.map(mail => mail.id === updatedMail.id ? updatedMail : mail));
+    setFilteredMails(prev => prev.map(mail => mail.id === updatedMail.id ? updatedMail : mail));
   };
 
   const getStatusColor = (status: string) => {
@@ -236,12 +266,14 @@ const MailList: React.FC = () => {
 
                   <div className="flex items-center gap-2 ml-4">
                     <button
+                      onClick={() => handleViewMail(mail)}
                       className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                       title="View"
                     >
                       <Eye className="w-4 h-4" />
                     </button>
                     <button
+                      onClick={() => handleEditMail(mail)}
                       className="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                       title="Edit"
                     >
@@ -261,6 +293,22 @@ const MailList: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Modals */}
+      {showDetailModal && selectedMail && (
+        <MailDetail
+          mail={selectedMail}
+          onClose={handleCloseDetailModal}
+        />
+      )}
+
+      {showEditModal && selectedMail && (
+        <EditMail
+          mail={selectedMail}
+          onClose={handleCloseEditModal}
+          onUpdate={handleUpdateMail}
+        />
+      )}
     </div>
   );
 };

@@ -1,6 +1,9 @@
 import { Mail, MailFilter, MailType, MailStatus, Attachment } from '../types';
 import { apiService } from './apiService';
 
+const PUBLIC_URL = import.meta.env.VITE_API_URL_PUBLIC || 'https://api.gestion-famille.com';
+const UPLOAD_PATH = '/uploads';
+
 class RealMailService {
   async getAllMails(): Promise<Mail[]> {
     try {
@@ -84,7 +87,7 @@ class RealMailService {
       return {
         id: response.id,
         name: response.name,
-        url: response.url,
+        url: `${PUBLIC_URL}/uploads/${response.url.replace(/^\/?uploads\/?/, '')}`,
         type: response.mimeType,
         size: response.size,
         uploadedAt: new Date(response.uploadedAt),
@@ -133,7 +136,7 @@ class RealMailService {
       attachments: apiMail.attachments ? apiMail.attachments.map((att: any) => ({
         id: att.id.toString(),
         name: att.name,
-        url: att.url,
+        url: `${PUBLIC_URL}/uploads/${att.url.replace(/^\/?uploads\/?/, '')}`,
         type: att.mimeType,
         size: att.size,
         uploadedAt: new Date(att.uploadedAt),

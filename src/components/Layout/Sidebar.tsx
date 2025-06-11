@@ -36,7 +36,7 @@ const Sidebar: React.FC = () => {
       <div className="p-6 border-b border-gray-100">
         <h1 className="text-xl font-bold text-gray-800 flex items-center gap-2">
           <Mail className="w-6 h-6 text-blue-600" />
-          MailManager
+          Courriers Manager
         </h1>
         <p className="text-sm text-gray-600 mt-1">{user?.name}</p>
       </div>

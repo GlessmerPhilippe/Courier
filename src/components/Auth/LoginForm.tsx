@@ -48,7 +48,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode, isRegisterMode }) =
           <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4">
             <Mail className="w-8 h-8 text-blue-600" />
           </div>
-          <h1 className="text-2xl font-bold text-white mb-2">MailManager</h1>
+          <h1 className="text-2xl font-bold text-white mb-2">Courriers Manager</h1>
           <p className="text-blue-100">
             {isRegisterMode ? t('auth.register') : t('auth.login')}
           </p>
@@ -146,12 +146,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode, isRegisterMode }) =
             </button>
           </div>
 
-          {!isRegisterMode && (
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-              <p className="text-xs text-gray-600 mb-2">Test credentials:</p>
-              <p className="text-xs text-gray-700">Admin: glessmer@live.fr / Plg@07112022</p>
-            </div>
-          )}
+  
         </form>
       </div>
     </div>
