@@ -12,6 +12,7 @@ import {
   Globe
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import ApiStatus from './ApiStatus';
 
 const Sidebar: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -62,7 +63,10 @@ const Sidebar: React.FC = () => {
         </ul>
       </nav>
 
-      <div className="p-4 border-t border-gray-100 space-y-2">
+      <div className="p-4 border-t border-gray-100 space-y-3">
+        {/* Statut de l'API */}
+        <ApiStatus />
+        
         <button
           onClick={toggleLanguage}
           className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200 w-full"
