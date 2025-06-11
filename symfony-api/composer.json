@@ -7,6 +7,7 @@
         "php": ">=8.1",
         "ext-ctype": "*",
         "ext-iconv": "*",
+        "doctrine/dbal": "^3",
         "doctrine/doctrine-bundle": "^2.10",
         "doctrine/doctrine-migrations-bundle": "^3.2",
         "doctrine/orm": "^2.16",
@@ -17,18 +18,18 @@
         "symfony/dotenv": "6.3.*",
         "symfony/flex": "^2",
         "symfony/framework-bundle": "6.3.*",
-        "symfony/runtime": "6.3.*",
-        "symfony/yaml": "6.3.*",
-        "symfony/security-bundle": "6.3.*",
-        "symfony/validator": "6.3.*",
-        "symfony/serializer": "6.3.*",
+        "symfony/http-foundation": "6.3.*",
+        "symfony/maker-bundle": "^1.50",
+        "symfony/mime": "6.3.*",
+        "symfony/password-hasher": "6.3.*",
         "symfony/property-access": "6.3.*",
         "symfony/property-info": "6.3.*",
-        "symfony/maker-bundle": "^1.50",
-        "symfony/orm-pack": "*",
-        "symfony/password-hasher": "6.3.*",
-        "symfony/http-foundation": "6.3.*",
-        "symfony/uid": "6.3.*"
+        "symfony/runtime": "6.3.*",
+        "symfony/security-bundle": "6.3.*",
+        "symfony/serializer": "6.3.*",
+        "symfony/uid": "6.3.*",
+        "symfony/validator": "6.3.*",
+        "symfony/yaml": "6.3.*"
     },
     "require-dev": {
         "symfony/debug-bundle": "6.3.*",
@@ -79,8 +80,9 @@
     },
     "extra": {
         "symfony": {
-            "allow-contrib": false,
-            "require": "6.3.*"
+            "allow-contrib": true,
+            "require": "6.3.*",
+            "docker": true
         }
     }
 }

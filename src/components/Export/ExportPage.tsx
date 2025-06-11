@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Download, FileText, Table } from 'lucide-react';
 import { Mail } from '../../types';
-import { mailService } from '../../services/mailService';
+import { mailService } from '../../services';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';

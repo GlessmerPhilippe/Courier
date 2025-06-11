@@ -12,7 +12,7 @@ import {
   Tag
 } from 'lucide-react';
 import { Mail, MailFilter } from '../../types';
-import { mailService } from '../../services/mailService';
+import { mailService } from '../../services';
 import { format } from 'date-fns';
 import { fr, enUS } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
@@ -128,7 +128,7 @@ const MailList: React.FC = () => {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder={t('common.search')}
+              placeholder={String(t('common.search'))}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
@@ -176,7 +176,7 @@ const MailList: React.FC = () => {
               type="text"
               value={filters.sender || ''}
               onChange={(e) => setFilters({ ...filters, sender: e.target.value || undefined })}
-              placeholder={t('common.sender')}
+              placeholder={String(t('common.sender'))}
               className="border border-gray-300 rounded-lg px-3 py-2"
             />
           </div>
@@ -187,7 +187,7 @@ const MailList: React.FC = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         {filteredMails.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
-            {t('common.noData')}
+            {String(t('common.noData'))}
           </div>
         ) : (
           <div className="divide-y divide-gray-100">

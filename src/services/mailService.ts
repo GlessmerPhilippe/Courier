@@ -1,62 +1,7 @@
 import { Mail, MailFilter, MailType, MailStatus, Attachment } from '../types';
 
 class MailService {
-  private mails: Mail[] = [
-    {
-      id: '1',
-      type: 'invoice',
-      sender: 'EDF',
-      recipient: 'Famille Dupont',
-      receivedDate: new Date('2024-01-15'),
-      status: 'pending',
-      subject: 'Facture électricité janvier 2024',
-      notes: 'Montant: 145€ - À payer avant le 30/01',
-      attachments: [],
-      dueDate: new Date('2024-01-30'),
-      actionRequired: 'Paiement requis',
-      createdBy: '1',
-      updatedAt: new Date('2024-01-15'),
-    },
-    {
-      id: '2',
-      type: 'administrative',
-      sender: 'Mairie de Paris',
-      recipient: 'M. Dupont',
-      receivedDate: new Date('2024-01-10'),
-      status: 'completed',
-      subject: 'Renouvellement carte d\'identité',
-      notes: 'Dossier traité, carte prête à récupérer',
-      attachments: [],
-      createdBy: '1',
-      updatedAt: new Date('2024-01-20'),
-    },
-    {
-      id: '3',
-      type: 'bank',
-      sender: 'Crédit Agricole',
-      recipient: 'Mme Dupont',
-      receivedDate: new Date('2024-01-08'),
-      status: 'in_progress',
-      subject: 'Relevé de compte décembre 2023',
-      notes: 'Vérification des opérations en cours',
-      attachments: [],
-      createdBy: '1',
-      updatedAt: new Date('2024-01-12'),
-    },
-    {
-      id: '4',
-      type: 'insurance',
-      sender: 'Allianz',
-      recipient: 'Famille Dupont',
-      receivedDate: new Date('2024-01-05'),
-      status: 'archived',
-      subject: 'Attestation assurance habitation',
-      notes: 'Document archivé pour l\'année 2024',
-      attachments: [],
-      createdBy: '1',
-      updatedAt: new Date('2024-01-05'),
-    }
-  ];
+  private mails: Mail[] = [];
 
   async getAllMails(): Promise<Mail[]> {
     // Simulate API call
@@ -153,7 +98,7 @@ class MailService {
     return filtered;
   }
 
-  async uploadAttachment(file: File): Promise<Attachment> {
+  async uploadAttachment(file: File, mailId?: string): Promise<Attachment> {
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     // Mock file upload
@@ -165,6 +110,14 @@ class MailService {
       size: file.size,
       uploadedAt: new Date(),
     };
+    
+    // If mailId is provided, add the attachment to the mail
+    if (mailId) {
+      const mailIndex = this.mails.findIndex(mail => mail.id === mailId);
+      if (mailIndex !== -1) {
+        this.mails[mailIndex].attachments.push(attachment);
+      }
+    }
     
     return attachment;
   }

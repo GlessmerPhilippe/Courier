@@ -88,11 +88,16 @@ class AttachmentController extends AbstractController
             'text/plain'
         ];
 
-        if (!in_array($uploadedFile->getMimeType(), $allowedMimeTypes)) {
+        // Store file metadata before moving the file
+        $mimeType = $uploadedFile->getMimeType();
+        $fileSize = $uploadedFile->getSize();
+        $originalName = $uploadedFile->getClientOriginalName();
+
+        if (!in_array($mimeType, $allowedMimeTypes)) {
             return $this->json(['error' => 'File type not allowed'], 400);
         }
 
-        $originalFilename = pathinfo($uploadedFile->getClientOriginalName(), PATHINFO_FILENAME);
+        $originalFilename = pathinfo($originalName, PATHINFO_FILENAME);
         $safeFilename = $this->slugger->slug($originalFilename);
         $newFilename = $safeFilename . '-' . uniqid() . '.' . $uploadedFile->guessExtension();
 
@@ -103,10 +108,10 @@ class AttachmentController extends AbstractController
         }
 
         $attachment = new Attachment();
-        $attachment->setName($uploadedFile->getClientOriginalName());
+        $attachment->setName($originalName);
         $attachment->setFilename($newFilename);
-        $attachment->setMimeType($uploadedFile->getMimeType());
-        $attachment->setSize($uploadedFile->getSize());
+        $attachment->setMimeType($mimeType);
+        $attachment->setSize($fileSize);
         $attachment->setMail($mail);
 
         $this->entityManager->persist($attachment);

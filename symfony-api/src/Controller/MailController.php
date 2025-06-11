@@ -24,6 +24,56 @@ class MailController extends AbstractController
         private MailRepository $mailRepository
     ) {}
 
+    #[Route('/stats', name: 'api_mails_stats', methods: ['GET'])]
+    #[OA\Get(
+        path: '/api/mails/stats',
+        summary: 'Get mail statistics for current user',
+        security: [['Bearer' => []]],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Mail statistics',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        'total' => new OA\Property(property: 'total', type: 'integer'),
+                        'pending' => new OA\Property(property: 'pending', type: 'integer'),
+                        'in_progress' => new OA\Property(property: 'in_progress', type: 'integer'),
+                        'completed' => new OA\Property(property: 'completed', type: 'integer'),
+                        'archived' => new OA\Property(property: 'archived', type: 'integer'),
+                        'overdue' => new OA\Property(property: 'overdue', type: 'integer')
+                    ]
+                )
+            )
+        ]
+    )]
+    public function stats(): JsonResponse
+    {
+        $user = $this->getUser();
+        $stats = $this->mailRepository->getStatsByUser($user);
+
+        return $this->json($stats);
+    }
+
+    #[Route('/overdue', name: 'api_mails_overdue', methods: ['GET'])]
+    #[OA\Get(
+        path: '/api/mails/overdue',
+        summary: 'Get overdue mails for current user',
+        security: [['Bearer' => []]],
+        responses: [
+            new OA\Response(response: 200, description: 'List of overdue mails')
+        ]
+    )]
+    public function overdue(): JsonResponse
+    {
+        $user = $this->getUser();
+        $overdueMails = $this->mailRepository->findOverdueByUser($user);
+
+        return $this->json(
+            json_decode($this->serializer->serialize($overdueMails, 'json', ['groups' => ['mail:read']]))
+        );
+    }
+
     #[Route('', name: 'api_mails_index', methods: ['GET'])]
     #[OA\Get(
         path: '/api/mails',
@@ -82,33 +132,6 @@ class MailController extends AbstractController
             'limit' => $limit,
             'pages' => ceil($total / $limit)
         ]);
-    }
-
-    #[Route('/{id}', name: 'api_mails_show', methods: ['GET'])]
-    #[OA\Get(
-        path: '/api/mails/{id}',
-        summary: 'Get a specific mail',
-        security: [['Bearer' => []]],
-        parameters: [
-            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))
-        ],
-        responses: [
-            new OA\Response(response: 200, description: 'Mail details'),
-            new OA\Response(response: 404, description: 'Mail not found')
-        ]
-    )]
-    public function show(int $id): JsonResponse
-    {
-        $user = $this->getUser();
-        $mail = $this->mailRepository->findOneBy(['id' => $id, 'createdBy' => $user]);
-
-        if (!$mail) {
-            return $this->json(['error' => 'Mail not found'], 404);
-        }
-
-        return $this->json(
-            json_decode($this->serializer->serialize($mail, 'json', ['groups' => ['mail:read']]))
-        );
     }
 
     #[Route('', name: 'api_mails_create', methods: ['POST'])]
@@ -185,6 +208,34 @@ class MailController extends AbstractController
         );
     }
 
+    #[Route('/{id}', name: 'api_mails_show', methods: ['GET'])]
+    #[OA\Get(
+        path: '/api/mails/{id}',
+        summary: 'Get a specific mail',
+        security: [['Bearer' => []]],
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Mail details'),
+            new OA\Response(response: 404, description: 'Mail not found')
+        ]
+    )]
+    public function show(string $id): JsonResponse
+    {
+        $user = $this->getUser();
+        $mailId = (int) $id;
+        $mail = $this->mailRepository->findOneBy(['id' => $mailId, 'createdBy' => $user]);
+
+        if (!$mail) {
+            return $this->json(['error' => 'Mail not found'], 404);
+        }
+
+        return $this->json(
+            json_decode($this->serializer->serialize($mail, 'json', ['groups' => ['mail:read']]))
+        );
+    }
+
     #[Route('/{id}', name: 'api_mails_update', methods: ['PUT', 'PATCH'])]
     #[OA\Put(
         path: '/api/mails/{id}',
@@ -198,10 +249,11 @@ class MailController extends AbstractController
             new OA\Response(response: 404, description: 'Mail not found')
         ]
     )]
-    public function update(int $id, Request $request): JsonResponse
+    public function update(string $id, Request $request): JsonResponse
     {
         $user = $this->getUser();
-        $mail = $this->mailRepository->findOneBy(['id' => $id, 'createdBy' => $user]);
+        $mailId = (int) $id;
+        $mail = $this->mailRepository->findOneBy(['id' => $mailId, 'createdBy' => $user]);
 
         if (!$mail) {
             return $this->json(['error' => 'Mail not found'], 404);
@@ -257,10 +309,11 @@ class MailController extends AbstractController
             new OA\Response(response: 404, description: 'Mail not found')
         ]
     )]
-    public function delete(int $id): JsonResponse
+    public function delete(string $id): JsonResponse
     {
         $user = $this->getUser();
-        $mail = $this->mailRepository->findOneBy(['id' => $id, 'createdBy' => $user]);
+        $mailId = (int) $id;
+        $mail = $this->mailRepository->findOneBy(['id' => $mailId, 'createdBy' => $user]);
 
         if (!$mail) {
             return $this->json(['error' => 'Mail not found'], 404);
@@ -270,55 +323,5 @@ class MailController extends AbstractController
         $this->entityManager->flush();
 
         return $this->json(null, 204);
-    }
-
-    #[Route('/stats', name: 'api_mails_stats', methods: ['GET'])]
-    #[OA\Get(
-        path: '/api/mails/stats',
-        summary: 'Get mail statistics for current user',
-        security: [['Bearer' => []]],
-        responses: [
-            new OA\Response(
-                response: 200,
-                description: 'Mail statistics',
-                content: new OA\JsonContent(
-                    type: 'object',
-                    properties: [
-                        'total' => new OA\Property(property: 'total', type: 'integer'),
-                        'pending' => new OA\Property(property: 'pending', type: 'integer'),
-                        'in_progress' => new OA\Property(property: 'in_progress', type: 'integer'),
-                        'completed' => new OA\Property(property: 'completed', type: 'integer'),
-                        'archived' => new OA\Property(property: 'archived', type: 'integer'),
-                        'overdue' => new OA\Property(property: 'overdue', type: 'integer')
-                    ]
-                )
-            )
-        ]
-    )]
-    public function stats(): JsonResponse
-    {
-        $user = $this->getUser();
-        $stats = $this->mailRepository->getStatsByUser($user);
-
-        return $this->json($stats);
-    }
-
-    #[Route('/overdue', name: 'api_mails_overdue', methods: ['GET'])]
-    #[OA\Get(
-        path: '/api/mails/overdue',
-        summary: 'Get overdue mails for current user',
-        security: [['Bearer' => []]],
-        responses: [
-            new OA\Response(response: 200, description: 'List of overdue mails')
-        ]
-    )]
-    public function overdue(): JsonResponse
-    {
-        $user = $this->getUser();
-        $overdueMails = $this->mailRepository->findOverdueByUser($user);
-
-        return $this->json(
-            json_decode($this->serializer->serialize($overdueMails, 'json', ['groups' => ['mail:read']]))
-        );
     }
 }

@@ -11,25 +11,75 @@ class RealAuthService {
 
   async login(email: string, password: string): Promise<LoginResponse | null> {
     try {
+      console.log('Attempting login with:', { email });
       const response = await apiService.login(email, password);
+      console.log('Login response received:', response);
       
-      const user: User = {
-        id: response.user.id.toString(),
-        email: response.user.email,
-        name: response.user.name,
-        role: response.user.roles?.includes('ROLE_ADMIN') ? 'admin' : 'user',
-        createdAt: new Date(response.user.createdAt),
-      };
-
-      const authData = { user, token: response.token };
-      
-      // Stocker les données d'authentification
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(authData));
-      
-      // Configurer le token dans le service API
+      // Set token first for API calls
       apiService.setToken(response.token);
       
-      return authData;
+      // Try to get user profile from API first
+      try {
+        console.log('Attempting to fetch profile...');
+        const profile = await apiService.getProfile();
+        console.log('Profile fetched successfully:', profile);
+        
+        const user: User = {
+          id: profile.id?.toString() || '1',
+          email: profile.email || email,
+          name: profile.name || email.split('@')[0],
+          role: profile.roles?.includes('ROLE_ADMIN') ? 'admin' : 'user',
+          createdAt: new Date(profile.createdAt || Date.now()),
+        };
+
+        const authData = { user, token: response.token };
+        
+        // Store auth data
+        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(authData));
+        
+        return authData;
+      } catch (profileError) {
+        console.warn('Profile fetch failed, falling back to JWT decoding:', profileError);
+        
+        // Fallback: decode JWT token to get user information
+        try {
+          const tokenPayload = JSON.parse(atob(response.token.split('.')[1]));
+          console.log('JWT payload:', tokenPayload);
+          
+          const user: User = {
+            id: '1', // Default ID since JWT doesn't contain user ID
+            email: tokenPayload.username || email,
+            name: tokenPayload.username?.split('@')[0] || email.split('@')[0],
+            role: tokenPayload.roles?.includes('ROLE_ADMIN') ? 'admin' : 'user',
+            createdAt: new Date(),
+          };
+
+          const authData = { user, token: response.token };
+          
+          // Store auth data
+          localStorage.setItem(this.STORAGE_KEY, JSON.stringify(authData));
+          
+          return authData;
+        } catch (jwtError) {
+          console.error('Failed to decode JWT:', jwtError);
+          
+          // Final fallback: create user with basic info
+          const user: User = {
+            id: '1',
+            email: email,
+            name: email.split('@')[0],
+            role: 'user',
+            createdAt: new Date(),
+          };
+
+          const authData = { user, token: response.token };
+          
+          // Store auth data
+          localStorage.setItem(this.STORAGE_KEY, JSON.stringify(authData));
+          
+          return authData;
+        }
+      }
     } catch (error) {
       console.error('Login error:', error);
       return null;
@@ -40,7 +90,7 @@ class RealAuthService {
     try {
       await apiService.register(email, password, name);
       
-      // Après l'inscription, se connecter automatiquement
+      // After registration, login automatically
       return this.login(email, password);
     } catch (error) {
       console.error('Registration error:', error);
@@ -58,7 +108,7 @@ class RealAuthService {
     if (stored) {
       try {
         const authData = JSON.parse(stored);
-        // Restaurer le token dans le service API
+        // Restore token in API service
         if (authData.token) {
           apiService.setToken(authData.token);
         }
@@ -76,14 +126,14 @@ class RealAuthService {
       const profile = await apiService.getProfile();
       
       const user: User = {
-        id: profile.id.toString(),
+        id: profile.id?.toString() || '1',
         email: profile.email,
         name: profile.name,
         role: profile.roles?.includes('ROLE_ADMIN') ? 'admin' : 'user',
-        createdAt: new Date(profile.createdAt),
+        createdAt: new Date(profile.createdAt || Date.now()),
       };
 
-      // Mettre à jour les données stockées
+      // Update stored data
       const currentAuth = this.getCurrentAuth();
       if (currentAuth) {
         const updatedAuth = { ...currentAuth, user };
@@ -93,7 +143,9 @@ class RealAuthService {
       return user;
     } catch (error) {
       console.error('Error refreshing profile:', error);
-      return null;
+      // Return current user from stored auth data instead of null
+      const currentAuth = this.getCurrentAuth();
+      return currentAuth?.user || null;
     }
   }
 }

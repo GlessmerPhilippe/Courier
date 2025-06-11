@@ -11,7 +11,7 @@ import {
   Mail as MailIcon
 } from 'lucide-react';
 import { Mail, MailType, MailStatus, Attachment } from '../../types';
-import { mailService } from '../../services/mailService';
+import { mailService } from '../../services';
 import { useAuth } from '../../contexts/AuthContext';
 
 const AddMailForm: React.FC = () => {
@@ -32,7 +32,7 @@ const AddMailForm: React.FC = () => {
     actionRequired: '',
   });
   
-  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<string[]>([]);
 
@@ -41,26 +41,41 @@ const AddMailForm: React.FC = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
-    const newUploadingFiles = files.map(f => f.name);
-    setUploadingFiles(prev => [...prev, ...newUploadingFiles]);
+    // Validate files
+    const validFiles = files.filter(file => {
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      const allowedTypes = [
+        'application/pdf',
+        'image/jpeg',
+        'image/png',
+        'image/gif',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'text/plain'
+      ];
 
-    try {
-      const uploadPromises = files.map(file => mailService.uploadAttachment(file));
-      const newAttachments = await Promise.all(uploadPromises);
-      setAttachments(prev => [...prev, ...newAttachments]);
-    } catch (error) {
-      console.error('Error uploading files:', error);
-    } finally {
-      setUploadingFiles(prev => prev.filter(name => !newUploadingFiles.includes(name)));
-    }
+      if (file.size > maxSize) {
+        alert(`File ${file.name} is too large (max 10MB)`);
+        return false;
+      }
+
+      if (!allowedTypes.includes(file.type)) {
+        alert(`File type ${file.type} is not allowed`);
+        return false;
+      }
+
+      return true;
+    });
+
+    setSelectedFiles(prev => [...prev, ...validFiles]);
   };
 
-  const removeAttachment = (id: string) => {
-    setAttachments(prev => prev.filter(att => att.id !== id));
+  const removeFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -70,16 +85,36 @@ const AddMailForm: React.FC = () => {
     setIsSubmitting(true);
 
     try {
+      // First create the mail without attachments
       const mailData: Omit<Mail, 'id' | 'updatedAt'> = {
         ...formData,
         receivedDate: new Date(formData.receivedDate),
         sentDate: formData.sentDate ? new Date(formData.sentDate) : undefined,
         dueDate: formData.dueDate ? new Date(formData.dueDate) : undefined,
-        attachments,
+        attachments: [], // Empty initially
         createdBy: user.id,
       };
 
-      await mailService.createMail(mailData);
+      const createdMail = await mailService.createMail(mailData);
+      
+      // Then upload attachments if any
+      if (selectedFiles.length > 0) {
+        setUploadingFiles(selectedFiles.map(f => f.name));
+        
+        try {
+          const uploadPromises = selectedFiles.map(file => 
+            mailService.uploadAttachment(file, createdMail.id)
+          );
+          
+          await Promise.all(uploadPromises);
+        } catch (error) {
+          console.error('Error uploading attachments:', error);
+          // Continue anyway, mail is created
+        } finally {
+          setUploadingFiles([]);
+        }
+      }
+
       navigate('/mails');
     } catch (error) {
       console.error('Error creating mail:', error);
@@ -314,8 +349,8 @@ const AddMailForm: React.FC = () => {
             </div>
           </div>
 
-          {/* Uploaded Files */}
-          {(attachments.length > 0 || uploadingFiles.length > 0) && (
+          {/* Selected Files */}
+          {(selectedFiles.length > 0 || uploadingFiles.length > 0) && (
             <div className="space-y-2">
               {uploadingFiles.map((fileName) => (
                 <div key={fileName} className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
@@ -327,16 +362,16 @@ const AddMailForm: React.FC = () => {
                 </div>
               ))}
               
-              {attachments.map((attachment) => (
-                <div key={attachment.id} className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
-                  <FileText className="w-5 h-5 text-green-600" />
-                  <span className="text-sm text-green-700">{attachment.name}</span>
-                  <span className="text-xs text-green-600">
-                    {(attachment.size / 1024 / 1024).toFixed(2)} MB
+              {selectedFiles.map((file, index) => (
+                <div key={`${file.name}-${index}`} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                  <FileText className="w-5 h-5 text-gray-600" />
+                  <span className="text-sm text-gray-700">{file.name}</span>
+                  <span className="text-xs text-gray-600">
+                    {(file.size / 1024 / 1024).toFixed(2)} MB
                   </span>
                   <button
                     type="button"
-                    onClick={() => removeAttachment(attachment.id)}
+                    onClick={() => removeFile(index)}
                     className="ml-auto text-red-600 hover:text-red-700"
                   >
                     <X className="w-4 h-4" />

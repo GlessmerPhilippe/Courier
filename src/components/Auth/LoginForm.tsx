@@ -32,10 +32,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode, isRegisterMode }) =
       }
 
       if (!success) {
-        setError(t('auth.loginError'));
+        setError(t('auth.loginError') || 'Login failed');
       }
     } catch (err) {
-      setError(t('auth.loginError'));
+      setError(t('auth.loginError') || 'Login failed');
     } finally {
       setIsLoading(false);
     }
@@ -73,7 +73,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode, isRegisterMode }) =
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  placeholder={t('auth.name')}
+                  placeholder={t('auth.name') || 'Name'}
                   required
                 />
               </div>
@@ -91,7 +91,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode, isRegisterMode }) =
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                placeholder={t('auth.email')}
+                placeholder={t('auth.email') || 'Email'}
                 required
               />
             </div>
@@ -108,7 +108,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode, isRegisterMode }) =
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                placeholder={t('auth.password')}
+                placeholder={t('auth.password') || 'Password'}
                 required
               />
               <button
@@ -149,8 +149,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode, isRegisterMode }) =
           {!isRegisterMode && (
             <div className="mt-6 p-4 bg-gray-50 rounded-lg">
               <p className="text-xs text-gray-600 mb-2">Test credentials:</p>
-              <p className="text-xs text-gray-700">Admin: admin@family.com / admin123</p>
-              <p className="text-xs text-gray-700">User: user@family.com / user123</p>
+              <p className="text-xs text-gray-700">Admin: glessmer@live.fr / Plg@07112022</p>
             </div>
           )}
         </form>

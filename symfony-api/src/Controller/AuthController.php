@@ -105,10 +105,7 @@ class AuthController extends AbstractController
         $user = $this->getUser();
         
         return $this->json(
-            $this->serializer->serialize($user, 'json', ['groups' => ['user:read']]),
-            200,
-            [],
-            true
+            json_decode($this->serializer->serialize($user, 'json', ['groups' => ['user:read']]))
         );
     }
 }

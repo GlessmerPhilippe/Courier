@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api';
 
 class ApiService {
   private token: string | null = null;
@@ -72,6 +72,15 @@ class ApiService {
       },
     };
 
+    // Debug logging for profile endpoint
+    if (endpoint === '/profile') {
+      console.log('Profile request details:', {
+        url,
+        token: this.token ? `${this.token.substring(0, 20)}...` : 'NO TOKEN',
+        headers: config.headers
+      });
+    }
+
     try {
       const response = await fetch(url, config);
       return this.handleResponse<T>(response);
@@ -83,10 +92,34 @@ class ApiService {
 
   // Auth endpoints
   async login(email: string, password: string) {
-    return this.request<{ token: string; user: any }>('/login_check', {
-      method: 'POST',
-      body: JSON.stringify({ username: email, password }),
-    });
+    try {
+      const url = `${API_BASE_URL}/login_check`;
+      console.log('Login request to:', url);
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username: email, password }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Login failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData
+        });
+        throw new Error(errorData.message || 'Login failed');
+      }
+
+      const data = await response.json();
+      console.log('Login response:', data);
+      return { token: data.token };
+    } catch (error) {
+      console.error('Login request failed:', error);
+      throw error;
+    }
   }
 
   async register(email: string, password: string, name: string) {
