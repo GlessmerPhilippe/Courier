@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import { User, AuthState } from '../types';
-import { authService } from '../services/authService';
+import { authService } from '../services';
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<boolean>;
@@ -49,9 +49,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   useEffect(() => {
     const initAuth = async () => {
-      const authData = authService.getCurrentAuth();
-      if (authData) {
-        dispatch({ type: 'INITIALIZE', payload: authData });
+      try {
+        const authData = authService.getCurrentAuth();
+        if (authData) {
+          dispatch({ type: 'INITIALIZE', payload: authData });
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+        dispatch({ type: 'LOGOUT' });
       }
     };
     initAuth();
@@ -67,6 +72,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       dispatch({ type: 'LOGIN_FAILURE' });
       return false;
     } catch (error) {
+      console.error('Login error:', error);
       dispatch({ type: 'LOGIN_FAILURE' });
       return false;
     }
@@ -81,6 +87,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
       return false;
     } catch (error) {
+      console.error('Register error:', error);
       return false;
     }
   };

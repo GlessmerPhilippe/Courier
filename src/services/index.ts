@@ -2,32 +2,38 @@
 const USE_REAL_API = import.meta.env.VITE_USE_REAL_API === 'true' || 
                      import.meta.env.VITE_API_URL !== undefined;
 
+console.log('🔧 API Configuration:', {
+  USE_REAL_API,
+  API_URL: import.meta.env.VITE_API_URL,
+  VITE_USE_REAL_API: import.meta.env.VITE_USE_REAL_API
+});
+
 // Services mock (par défaut)
-export { authService as mockAuthService } from './authService';
-export { mailService as mockMailService } from './mailService';
+import { authService as mockAuthService } from './authService';
+import { mailService as mockMailService } from './mailService';
 
 // Services réels
-export { realAuthService } from './realAuthService';
-export { realMailService } from './realMailService';
-export { apiService } from './apiService';
+import { realAuthService } from './realAuthService';
+import { realMailService } from './realMailService';
 
 // Export conditionnel basé sur la configuration
-export const authService = USE_REAL_API 
-  ? await import('./realAuthService').then(m => m.realAuthService)
-  : await import('./authService').then(m => m.authService);
+export const authService = USE_REAL_API ? realAuthService : mockAuthService;
+export const mailService = USE_REAL_API ? realMailService : mockMailService;
 
-export const mailService = USE_REAL_API
-  ? await import('./realMailService').then(m => m.realMailService)
-  : await import('./mailService').then(m => m.mailService);
+// Re-export des services individuels
+export { mockAuthService, mockMailService, realAuthService, realMailService };
+export { apiService } from './apiService';
 
 // Fonction utilitaire pour vérifier si on utilise l'API réelle
 export const isUsingRealAPI = () => USE_REAL_API;
 
 // Fonction pour basculer manuellement (utile pour le développement)
 export const switchToRealAPI = () => {
-  window.location.reload(); // Recharger pour appliquer les changements
+  localStorage.setItem('force_real_api', 'true');
+  window.location.reload();
 };
 
 export const switchToMockAPI = () => {
-  window.location.reload(); // Recharger pour appliquer les changements
+  localStorage.removeItem('force_real_api');
+  window.location.reload();
 };

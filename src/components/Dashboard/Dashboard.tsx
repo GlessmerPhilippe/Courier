@@ -2,35 +2,68 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Mail, Clock, CheckCircle, AlertTriangle, TrendingUp } from 'lucide-react';
 import { Mail as MailType } from '../../types';
-import { mailService } from '../../services/mailService';
+import { mailService } from '../../services';
 import { format } from 'date-fns';
 import { fr, enUS } from 'date-fns/locale';
 
 const Dashboard: React.FC = () => {
   const { t, i18n } = useTranslation();
   const [mails, setMails] = useState<MailType[]>([]);
+  const [stats, setStats] = useState({
+    total: 0,
+    pending: 0,
+    completed: 0,
+    overdue: 0,
+  });
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string>('');
 
   useEffect(() => {
-    const loadMails = async () => {
-      try {
-        const data = await mailService.getAllMails();
-        setMails(data);
-      } catch (error) {
-        console.error('Error loading mails:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadMails();
+    loadData();
   }, []);
 
-  const stats = {
-    total: mails.length,
-    pending: mails.filter(m => m.status === 'pending').length,
-    completed: mails.filter(m => m.status === 'completed').length,
-    overdue: mails.filter(m => m.dueDate && new Date(m.dueDate) < new Date() && m.status !== 'completed').length,
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      setError('');
+      
+      // Charger les mails et les stats en parallèle
+      const [mailsData, statsData] = await Promise.all([
+        mailService.getAllMails(),
+        loadStats()
+      ]);
+      
+      setMails(mailsData);
+      setStats(statsData);
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+      setError('Erreur lors du chargement des données');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadStats = async () => {
+    try {
+      // Essayer d'utiliser l'API stats si disponible
+      if ('getStats' in mailService) {
+        return await (mailService as any).getStats();
+      }
+      
+      // Sinon calculer à partir des mails
+      const allMails = await mailService.getAllMails();
+      return {
+        total: allMails.length,
+        pending: allMails.filter(m => m.status === 'pending').length,
+        completed: allMails.filter(m => m.status === 'completed').length,
+        overdue: allMails.filter(m => 
+          m.dueDate && new Date(m.dueDate) < new Date() && m.status !== 'completed'
+        ).length,
+      };
+    } catch (error) {
+      console.error('Error loading stats:', error);
+      return { total: 0, pending: 0, completed: 0, overdue: 0 };
+    }
   };
 
   const recentMails = mails
@@ -65,6 +98,23 @@ const Dashboard: React.FC = () => {
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600">{t('common.loading')}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={loadData}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Réessayer
+          </button>
         </div>
       </div>
     );
